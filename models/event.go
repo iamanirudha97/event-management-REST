@@ -14,17 +14,19 @@ type Event struct {
 	Description string    `binding: "required"`
 	Location    string    `binding: "required"`
 	DateTime    time.Time `binding: "required"`
-	UserId      int
+	UserId      int       `binding: "required"`
 }
 
 func (e Event) SaveEvent() {
-	query := `INSERT INTO events(name, description, location, datetime, user_id) 
+	query := `INSERT INTO events(name, description, location, datetime, userId) 
 				VALUES($1, $2, $3, $4, $5)`
 
 	statement, err := db.DB.Prepare(query)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	defer statement.Close()
 
 	result, err := statement.Exec(e.Name, e.Description, e.Location, e.DateTime, e.UserId)
 	if err != nil {
@@ -40,6 +42,7 @@ func GetAllEvents() ([]Event, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var events []Event
 	for rows.Next() {
