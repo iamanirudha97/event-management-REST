@@ -10,7 +10,7 @@ import (
 )
 
 type Event struct {
-	Id          int
+	Id          int64
 	Name        string    `binding: "required"`
 	Description string    `binding: "required"`
 	Location    string    `binding: "required"`
@@ -67,4 +67,21 @@ func GetEventById(id int64) (*Event, error) {
 		return nil, errors.New("no Entry found")
 	}
 	return &event, nil
+}
+
+func (e Event) UpdateEventById() error {
+	query := `UPDATE events
+		SET name = $1, description = $2, location = $3, datetime = $4
+		WHERE id = $5`
+
+	statement, err := db.DB.Prepare(query)
+
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer statement.Close()
+
+	_, err = statement.Exec(e.Name, e.Description, e.Location, e.DateTime, e.Id)
+	return err
 }
