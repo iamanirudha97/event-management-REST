@@ -25,8 +25,12 @@ func CreateEvent(context *gin.Context) {
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Could not parse the request"})
 	}
-
-	event.SaveEvent()
+	id, err := event.SaveEvent()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	event.Id = id
 	context.JSON(http.StatusCreated, gin.H{"message": "Event created!", "event": event})
 }
 
@@ -74,4 +78,25 @@ func UpdateEvent(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"message": "Updated Successfully"})
+}
+
+func DeleteEvent(context *gin.Context) {
+	eventId, err := strconv.ParseInt(context.Param("id"), 10, 64)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "cannot parse event id"})
+		return
+	}
+
+	event, err := models.GetEventById(eventId)
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Event doesnt Exist"})
+		return
+	}
+
+	err = event.DeleteEventById()
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete the event"})
+		return
+	}
+	context.JSON(http.StatusOK, gin.H{"message": "Event Deleted Successfully"})
 }
