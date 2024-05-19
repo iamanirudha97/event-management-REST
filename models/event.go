@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -55,4 +56,15 @@ func GetAllEvents() ([]Event, error) {
 	}
 	fmt.Println(events)
 	return events, nil
+}
+
+func GetEventById(id int64) (*Event, error) {
+	query := "SELECT * FROM events WHERE id = $1"
+	row := db.DB.QueryRow(query, id)
+	var event Event
+	err := row.Scan(&event.Id, &event.Name, &event.Description, &event.Location, &event.DateTime, &event.UserId)
+	if err != nil || row == nil {
+		return nil, errors.New("no Entry found")
+	}
+	return &event, nil
 }
