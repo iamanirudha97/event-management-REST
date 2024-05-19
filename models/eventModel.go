@@ -3,7 +3,6 @@ package models
 import (
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	"example.com/eventbrite/db"
@@ -18,23 +17,16 @@ type Event struct {
 	UserId      int       `binding: "required"`
 }
 
-func (e Event) SaveEvent() {
-	query := `INSERT INTO events(name, description, location, datetime, userId) 
-				VALUES($1, $2, $3, $4, $5)`
-
-	statement, err := db.DB.Prepare(query)
+func (e Event) SaveEvent() (int64, error) {
+	query := `
+	INSERT INTO events(name, description, location, dateTime, userId) 
+	VALUES ($1, $2, $3, $4, $5) RETURNING id`
+	var lastId int64
+	err := db.DB.QueryRow(query, e.Name, e.Description, e.Location, e.DateTime, e.UserId).Scan(&lastId)
 	if err != nil {
-		log.Fatal(err)
+		return 0, err
 	}
-
-	defer statement.Close()
-
-	result, err := statement.Exec(e.Name, e.Description, e.Location, e.DateTime, e.UserId)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	result.LastInsertId()
+	return lastId, err
 }
 
 func GetAllEvents() ([]Event, error) {
@@ -83,5 +75,18 @@ func (e Event) UpdateEventById() error {
 	defer statement.Close()
 
 	_, err = statement.Exec(e.Name, e.Description, e.Location, e.DateTime, e.Id)
+	return err
+}
+
+func (e Event) DeleteEventById() error {
+	query := `DELETE FROM events WHERE id = $1`
+	statement, err := db.DB.Prepare(query)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer statement.Close()
+
+	_, err = statement.Exec(e.Id)
 	return err
 }
