@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -37,6 +38,19 @@ func InitDb() {
 }
 
 func createTables() {
+	createUsersTables := `
+	CREATE TABLE IF NOT EXISTS users (
+		id SERIAL PRIMARY KEY,
+		email TEXT NOT NULL UNIQUE,
+		password TEXT NOT NULL
+	)
+	`
+	_, err := DB.Exec(createUsersTables)
+	if err != nil {
+		fmt.Println(err)
+		panic("Failed to Create Users Table")
+	}
+
 	createEventsTable := `
     CREATE TABLE IF NOT EXISTS events (
         id SERIAL PRIMARY KEY,
@@ -44,10 +58,11 @@ func createTables() {
         description TEXT NOT NULL,
         location TEXT NOT NULL,
         dateTime TIMESTAMP NOT NULL,
-        userId INTEGER
+        userId INTEGER,
+		FOREIGN KEY(userId) REFERENCES users(id)
     )
-    `
-	_, err := DB.Exec(createEventsTable)
+	`
+	_, err = DB.Exec(createEventsTable)
 	if err != nil {
 		log.Fatal(err)
 		return
