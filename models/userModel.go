@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 
 	"example.com/eventbrite/db"
@@ -31,4 +32,22 @@ func (u User) SaveUser() (*int64, error) {
 	}
 
 	return &userId, nil
+}
+
+func (u User) ValidateCredentials() error {
+	query := "SELECT id,password FROM users WHERE email = $1 "
+
+	var retrievedPassword string
+	err := db.DB.QueryRow(query, u.Email).Scan(&u.Id, &retrievedPassword)
+	if err != nil {
+		fmt.Println("Can not find User")
+		fmt.Println(err)
+		return err
+	}
+	isValid := utils.IsPasswordValid(u.Password, retrievedPassword)
+
+	if !isValid {
+		return errors.New("invalid credentials")
+	}
+	return nil
 }
