@@ -24,7 +24,7 @@ func VerifyToken(token string) error {
 			return nil, errors.New("unexpected signing method")
 		}
 
-		return os.Getenv("JWT_SECRET"), nil
+		return []byte(os.Getenv("JWT_SECRET")), nil
 	})
 
 	if err != nil {
