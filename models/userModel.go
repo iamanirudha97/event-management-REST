@@ -14,7 +14,7 @@ type User struct {
 	Password string `binding: "required`
 }
 
-func (u User) SaveUser() (*int64, error) {
+func (u *User) SaveUser() (*int64, error) {
 	query := "INSERT INTO users(email, password) VALUES ($1, $2) RETURNING id"
 
 	hashedPassword, err := utils.HashPassword(u.Password)
@@ -34,7 +34,7 @@ func (u User) SaveUser() (*int64, error) {
 	return &userId, nil
 }
 
-func (u User) ValidateCredentials() error {
+func (u *User) ValidateCredentials() error {
 	query := "SELECT id,password FROM users WHERE email = $1 "
 
 	var retrievedPassword string
