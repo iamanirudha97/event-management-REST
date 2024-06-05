@@ -14,19 +14,20 @@ type Event struct {
 	Description string    `binding: "required"`
 	Location    string    `binding: "required"`
 	DateTime    time.Time `binding: "required"`
-	UserId      int       `binding: "required"`
+	UserId      int64
 }
 
-func (e Event) SaveEvent() (int64, error) {
+func (e *Event) SaveEvent() error {
 	query := `
 	INSERT INTO events(name, description, location, dateTime, userId) 
 	VALUES ($1, $2, $3, $4, $5) RETURNING id`
 	var lastId int64
 	err := db.DB.QueryRow(query, e.Name, e.Description, e.Location, e.DateTime, e.UserId).Scan(&lastId)
 	if err != nil {
-		return 0, err
+		return err
 	}
-	return lastId, err
+	e.Id = lastId
+	return err
 }
 
 func GetAllEvents() ([]Event, error) {
@@ -88,5 +89,26 @@ func (e Event) DeleteEventById() error {
 	defer statement.Close()
 
 	_, err = statement.Exec(e.Id)
+	return err
+}
+
+func (e Event) RegisterEvent(userId int64) error {
+	query := "INSERT INTO registrations(eventId, userId) VALUES ($1, $2)"
+	statement, err := db.DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+	_, err = statement.Exec(e.Id, userId)
+	return err
+}
+
+func (e Event) CancelRegistration(userId int64) error {
+	query := "DELETE FROM registrations WHERE eventId = $1 AND userId = $2"
+	statement, err := db.DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	_, err = statement.Exec(e.Id, userId)
 	return err
 }

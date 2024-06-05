@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"example.com/eventbrite/models"
-	"example.com/eventbrite/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,31 +19,25 @@ func GetAllEvents(context *gin.Context) {
 }
 
 func CreateEvent(context *gin.Context) {
-	token := context.Request.Header.Get("Authorization")
-
-	if token == "" {
-		context.JSON(http.StatusUnauthorized, gin.H{"message": "Not Authorized, No token found"})
-		return
-	}
-
-	err := utils.VerifyToken(token)
-
-	if err != nil {
-		context.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
-	}
-
 	var event models.Event
-	err = context.ShouldBindJSON(&event)
+	fmt.Print("event before bind : ", event)
+	err := context.ShouldBindJSON(&event)
+	fmt.Print("event after bind : ", event)
 
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Could not parse the request"})
 	}
-	id, err := event.SaveEvent()
+
+	fmt.Print("event before id set : ", event)
+	userId := context.GetInt64("userId")
+	event.UserId = userId
+	fmt.Print("event after id set : ", event)
+	err = event.SaveEvent()
+
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	event.Id = id
 	context.JSON(http.StatusCreated, gin.H{"message": "Event created!", "event": event})
 }
 
@@ -71,9 +64,16 @@ func UpdateEvent(context *gin.Context) {
 		return
 	}
 
-	_, err = models.GetEventById(eventId)
+	userId := context.GetInt64("userId")
+	event, err := models.GetEventById(eventId)
+
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "could not fetch event"})
+		return
+	}
+
+	if event.UserId != userId {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized to update the event"})
 		return
 	}
 
@@ -101,9 +101,15 @@ func DeleteEvent(context *gin.Context) {
 		return
 	}
 
+	userId := context.GetInt64("userId")
 	event, err := models.GetEventById(eventId)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"message": "Event doesnt Exist"})
+		return
+	}
+
+	if event.UserId != userId {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized to delete the event"})
 		return
 	}
 
